@@ -2,6 +2,7 @@ import * as S from './state.js';
 import { add, addSys, dots, updateGoBtn } from './ui.js';
 import { send } from '../lib/relay.js';
 import { set } from '../lib/keeper.js';
+import { pool } from './dom.js';
 
 export function submit(text) {
   const thread = [...S.thread, { role: 'user', content: text }];
@@ -22,6 +23,7 @@ export function submit(text) {
     }
     responseText += tok;
     bubble.textContent = responseText;
+    pool.scrollTop = pool.scrollHeight;
     S.setCurrentText(responseText);
   };
 

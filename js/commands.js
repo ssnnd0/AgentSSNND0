@@ -1,9 +1,9 @@
-import { inp, cmdOverlay, ovBody, ovDetail, ovCnt, pool, badge } from './dom.js';
+import { inp, foot, cmdOverlay, ovBody, ovDetail, ovCnt, pool, badge } from './dom.js';
 import * as S from './state.js';
 import { KEYS, get, set, getPresets, savePreset, getPreprompts, getSkills, setModelForBackend } from '../lib/keeper.js';
 import { ensure, refresh } from '../lib/relay.js';
 import { BACKENDS } from '../lib/backends.js';
-import { add, addSys, updateGoBtn, resizeInp, toggleAgentMode, renderPresets, clearHint, applyPreset } from './ui.js';
+import { add, addSys, updateGoBtn, resizeInp, toggleAgentMode, renderPresets, clearHint, applyPreset, sync } from './ui.js';
 
 export function getCmds(filterText) {
   const ft = (filterText || '').toLowerCase().trim();
@@ -27,6 +27,11 @@ export function getCmds(filterText) {
     if (baseCmd === 'skill') {
       S.skillsList.filter(s => s.name.toLowerCase().includes(partial))
         .forEach(s => addC(s.name, s.icon || '\u26A1', (s.prompt || '').slice(0, 50), 'skills', { token: '/skill ' + s.name + ' ', run: () => { inp.value = s.prompt || ''; inp.focus(); resizeInp(); updateGoBtn(); addSys('Skill "' + s.name + '" loaded.'); } }));
+      return out;
+    }
+    if (baseCmd === 'provider') {
+      Object.keys(BACKENDS).filter(function (k) { return k.includes(partial) || BACKENDS[k].label.toLowerCase().includes(partial); })
+        .forEach(function (k) { return addC(k, '\u2699', BACKENDS[k].label, 'providers', { token: '/provider ' + k + ' ', run: function () { runCommand('provider', k); } }); });
       return out;
     }
   }
@@ -101,6 +106,9 @@ function getArgItems(cmd) {
     });
     case 'skill': return S.skillsList.map(function (s) {
       return { label: s.name, value: s.name };
+    });
+    case 'provider': return Object.keys(BACKENDS).map(function (k) {
+      return { label: BACKENDS[k].label + ' (' + k + ')', value: k };
     });
     default: return [];
   }
@@ -280,7 +288,28 @@ export function runCommand(cmd, args) {
       else add('Usage: /skill <name>', 'err');
       break;
     case 'provider':
-      showProviderSelector();
+      if (args) {
+        var pid = args.toLowerCase();
+        var match = Object.keys(BACKENDS).find(function (k) { return k === pid || BACKENDS[k].label.toLowerCase() === pid; }) || null;
+        if (match) {
+          (async function () {
+            await set(KEYS.backend, match);
+            await refresh();
+            S.setCurrent(match);
+            var b = BACKENDS[match];
+            var mdl = b.models && b.models[0] ? b.models[0] : b.fallback;
+            S.setCurrentModel(mdl);
+            setModelForBackend(match, mdl);
+            await set(KEYS.model, mdl);
+            badge.textContent = mdl;
+            addSys('Provider \u2192 ' + b.label + ' \xB7 Model \u2192 ' + mdl);
+          })();
+        } else {
+          add('Unknown provider "' + args + '". Try: ' + Object.keys(BACKENDS).join(', '), 'err');
+        }
+      } else {
+        showProviderSelector();
+      }
       break;
     case 'skills':
       add(S.skillsList.length ? 'Skills: ' + S.skillsList.map(s => (s.icon || '\u2192') + ' ' + s.name).join(', ') : 'No skills', 'other');
@@ -365,6 +394,6 @@ export function showProviderSelector() {
     card.remove();
   });
 
-  pool.appendChild(card);
+  foot.appendChild(card);
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

@@ -1,7 +1,7 @@
 import { KEYS, get, set, getModelForBackend, getPresets, getPreprompts, getSkills } from '../lib/keeper.js';
 import { ensure, refresh } from '../lib/relay.js';
 import { resolve } from '../lib/backends.js';
-import { pool, inp, inpShell, go, badge, presetBar, agentPill, anonToggle, anonWarn } from './dom.js';
+import { pool, foot, inp, inpShell, go, badge, presetBar, agentPill, anonToggle, anonWarn } from './dom.js';
 import * as S from './state.js';
 
 export function clearHint() {
@@ -263,7 +263,7 @@ export function showAskDialog(tabId, actions, step) {
     chrome.runtime.sendMessage({ type: 'AGENT_RESPOND', tabId, decision: 'confirm' }).catch(function () {});
     card.remove(); S.setAskCard(null);
   });
-  pool.appendChild(card);
+  foot.appendChild(card);
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   S.setAskCard(card);
 }

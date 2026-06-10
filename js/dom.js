@@ -4,6 +4,7 @@ export const inpShell = document.getElementById('inpShell');
 export const go = document.getElementById('go');
 export const badge = document.getElementById('badge');
 export const presetBar = document.getElementById('presetBar');
+export const foot = document.getElementById('foot');
 export const cmdOverlay = document.getElementById('cmdOverlay');
 export const ovBody = document.getElementById('ovBody');
 export const ovDetail = document.getElementById('ovDetail');

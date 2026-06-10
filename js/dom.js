@@ -1,0 +1,13 @@
+export const pool = document.getElementById('pool');
+export const inp = document.getElementById('inp');
+export const inpShell = document.getElementById('inpShell');
+export const go = document.getElementById('go');
+export const badge = document.getElementById('badge');
+export const presetBar = document.getElementById('presetBar');
+export const cmdOverlay = document.getElementById('cmdOverlay');
+export const ovBody = document.getElementById('ovBody');
+export const ovDetail = document.getElementById('ovDetail');
+export const ovCnt = document.getElementById('ovCnt');
+export const agentPill = document.getElementById('agentPill');
+export const anonToggle = document.getElementById('anonToggle');
+export const anonWarn = document.getElementById('anonWarn');

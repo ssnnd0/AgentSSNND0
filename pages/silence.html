@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>SSNND0 silence</title></head>
+<body>
+<script>
+setInterval(() => {
+  chrome.runtime.sendMessage({ type: 'PING' }).catch(() => {});
+}, 20000);
+
+let ctx;
+function getCtx() {
+  if (!ctx) {
+    const C = window.AudioContext || window.webkitAudioContext;
+    ctx = new C();
+  }
+  return ctx;
+}
+
+chrome.runtime.onMessage.addListener((msg, _, reply) => {
+  if (msg.type === 'PLAY') {
+    (async () => {
+      try {
+        const c = getCtx();
+        const res = await fetch(msg.url);
+        const buf = await res.arrayBuffer();
+        const audio = await c.decodeAudioData(buf);
+        const src = c.createBufferSource();
+        src.buffer = audio;
+        const gain = c.createGain();
+        gain.gain.value = msg.volume || 0.4;
+        src.connect(gain);
+        gain.connect(c.destination);
+        if (c.state === 'suspended') await c.resume();
+        src.start(0);
+        await new Promise(r => { src.onended = r; });
+        reply({ ok: true });
+      } catch (e) {
+        reply({ ok: false, err: e.message });
+      }
+    })();
+    return true;
+  }
+});
+</script>
+</body>
+</html>

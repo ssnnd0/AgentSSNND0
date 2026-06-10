@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "blockedSites": {
+      "title": "Blocked sites",
+      "description": "URL patterns where the panel is disabled",
+      "type": "array", "items": { "type": "string" }
+    },
+    "forcedBackend": {
+      "title": "Forced backend",
+      "description": "Restrict to one provider: openrouter, openai, gemini, deepseek, mistral, or a custom URL",
+      "type": "string"
+    }
+  }
+}

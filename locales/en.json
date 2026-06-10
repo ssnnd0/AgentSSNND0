@@ -1,0 +1,21 @@
+{
+  "appName": "SSNND0 Agent",
+  "appDesc": "Universal AI assistant panel — works with multiple backends",
+  "panelTitle": "SSNND0",
+  "inputPlaceholder": "Message...",
+  "send": "Send",
+  "save": "Save",
+  "reset": "Reset",
+  "backend": "Backend",
+  "model": "Model",
+  "secretKey": "Secret Key",
+  "customGateway": "Custom Gateway",
+  "systemPrompt": "System Prompt",
+  "settings": "Settings",
+  "hintStart": "Pick a backend in Settings, then start typing.",
+  "hintStored": "Stored locally — never sent anywhere except your chosen API.",
+  "error": "Error",
+  "saved": "Saved.",
+  "defaultsRestored": "Defaults restored.",
+  "emptyResponse": "(empty)"
+}

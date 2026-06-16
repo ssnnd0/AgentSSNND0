@@ -1,7 +1,7 @@
 import { KEYS, get, set, getModelForBackend, getPresets, getPreprompts, getSkills } from '../lib/keeper.js';
 import { ensure, refresh } from '../lib/relay.js';
 import { resolve } from '../lib/backends.js';
-import { pool, inp, inpShell, go, badge, presetBar, agentPill, anonToggle, anonWarn } from './dom.js';
+import { pool, foot, inp, inpShell, go, badge, presetBar, agentPill, anonToggle, anonWarn } from './dom.js';
 import * as S from './state.js';
 
 export function clearHint() {
@@ -66,8 +66,8 @@ export function updateGoBtn() {
 }
 
 export function toggleAgentMode() {
-  const isAgent = S.mode === 'agent';
-  const newMode = isAgent ? 'chat' : 'agent';
+  var isAgent = S.mode === 'agent';
+  var newMode = isAgent ? 'chat' : 'agent';
   S.setMode(newMode);
   agentPill.classList.toggle('agent-on', !isAgent);
   inpShell.classList.toggle('agent', !isAgent);
@@ -75,6 +75,14 @@ export function toggleAgentMode() {
   inp.placeholder = !isAgent
     ? 'Describe a task for the agent to do on this tab\u2026'
     : 'Message\u2026';
+  if (!isAgent) {
+    /* Entering agent mode — ensure tab is grouped */
+    chrome.tabs.query({ active: true, currentWindow: true }).then(function (tabs) {
+      if (tabs[0]) {
+        chrome.runtime.sendMessage({ type: 'AGENT_MODE_ACTIVATE', tabId: tabs[0].id }).catch(function () {});
+      }
+    }).catch(function () {});
+  }
 }
 
 export function toggleAnon() {
@@ -136,16 +144,29 @@ export function escHtml(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export function stepRow(phase, text) {
+export function stepRow(stepNum, thinking) {
   const row = document.createElement('div');
   row.className = 'step active';
   row.innerHTML =
     '<div class="rail"><div class="node"></div><div class="line"></div></div>' +
-    '<div class="body"><div class="phase"></div><div class="txt"></div></div>';
-  row.querySelector('.phase').textContent = phase;
-  row.querySelector('.txt').textContent = text;
+    '<div class="body"><div class="phase">Step ' + stepNum + '</div><div class="txt"></div></div>';
+  if (thinking) row.querySelector('.txt').textContent = thinking;
   return row;
 }
+
+var TOOLS_HTML = '<div class="tools-bar">' +
+  '<span class="tool-tag" title="Click an element">click</span>' +
+  '<span class="tool-tag" title="Type into an input">type</span>' +
+  '<span class="tool-tag" title="Select a dropdown option">select</span>' +
+  '<span class="tool-tag" title="Scroll the page">scroll</span>' +
+  '<span class="tool-tag" title="Navigate to a URL">navigate</span>' +
+  '<span class="tool-tag" title="Search the web via DuckDuckGo">search</span>' +
+  '<span class="tool-tag" title="Wait for page to load">wait</span>' +
+  '<span class="tool-tag" title="Press a keyboard key">keypress</span>' +
+  '<span class="tool-tag" title="Extract text from element">extract</span>' +
+  '<span class="tool-tag" title="Switch browser tab">switchTab</span>' +
+  '<span class="tool-tag" title="Mark task done">done</span>' +
+  '</div>';
 
 export function buildRunCard(tabId, task) {
   clearHint();
@@ -155,9 +176,12 @@ export function buildRunCard(tabId, task) {
     '<div class="run-head">' +
     '  <span class="run-pulse"></span>' +
     '  <span class="run-title"></span>' +
-    '  <button class="run-stop">Stop</button>' +
+    '  <button class="run-pause" data-paused="0" title="Pause agent">Pause</button>' +
+    '  <button class="run-stop">Cancel</button>' +
     ' </div>' +
+    ' <div class="run-screenshot"></div>' +
     ' <div class="run-steps"></div>' +
+    TOOLS_HTML +
     ' <div class="run-foot"></div>';
   card.querySelector('.run-title').textContent = task;
   const stopBtn = card.querySelector('.run-stop');
@@ -165,10 +189,20 @@ export function buildRunCard(tabId, task) {
     chrome.runtime.sendMessage({ type: 'AGENT_CANCEL', tabId }).catch(() => {});
     stopBtn.disabled = true; stopBtn.textContent = 'Stopping\u2026';
   });
+  const pauseBtn = card.querySelector('.run-pause');
+  pauseBtn.addEventListener('click', () => {
+    const paused = pauseBtn.dataset.paused === '1';
+    if (paused) {
+      chrome.runtime.sendMessage({ type: 'AGENT_RESUME', tabId }).catch(() => {});
+    } else {
+      chrome.runtime.sendMessage({ type: 'AGENT_PAUSE', tabId }).catch(() => {});
+    }
+  });
   pool.appendChild(card);
   pool.scrollTop = pool.scrollHeight;
-  const ref = { card, steps: card.querySelector('.run-steps'), stop: stopBtn,
+  const ref = { card, steps: card.querySelector('.run-steps'), stop: stopBtn, pause: pauseBtn,
                 foot: card.querySelector('.run-foot'), pulse: card.querySelector('.run-pulse'),
+                shot: card.querySelector('.run-screenshot'),
                 lastStep: -1, stepEl: null };
   S.runCards.set(tabId, ref);
   return ref;
@@ -181,16 +215,60 @@ export function handleAgentUpdate(tabId, u) {
   switch (u.type) {
     case 'agent-start': break;
 
+    case 'agent-screenshot': {
+      if (!ref || !ref.shot) return;
+      ref.shot.innerHTML = '';
+      var img = document.createElement('img');
+      img.className = 'shot-thumb';
+      img.src = 'data:' + (u.mimeType || 'image/jpeg') + ';base64,' + u.data;
+      img.alt = 'Screenshot';
+      img.title = 'Click to open full screenshot in new tab';
+      img.addEventListener('click', function () {
+        window.open(img.src, '_blank');
+      });
+      ref.shot.appendChild(img);
+      break;
+    }
+
+    case 'agent-thinking': {
+      if (!ref || !ref.stepEl) return;
+      var txtEl = ref.stepEl.querySelector('.txt');
+      if (txtEl) {
+        txtEl.textContent = u.text || '';
+        txtEl.classList.add('think');
+        ref.steps.scrollTop = ref.steps.scrollHeight;
+      }
+      break;
+    }
+
+    case 'agent-paused': {
+      if (ref && ref.pause) {
+        ref.pause.dataset.paused = '1';
+        ref.pause.textContent = 'Resume';
+        ref.pause.title = 'Resume agent';
+      }
+      break;
+    }
+
+    case 'agent-resumed': {
+      if (ref && ref.pause) {
+        ref.pause.dataset.paused = '0';
+        ref.pause.textContent = 'Pause';
+        ref.pause.title = 'Pause agent';
+      }
+      break;
+    }
+
     case 'agent-step': {
       if (!ref) return;
       if (ref.stepEl) ref.stepEl.classList.remove('active');
       if (u.step !== ref.lastStep) {
         ref.lastStep = u.step;
-        ref.stepEl = stepRow('Step ' + (u.step + 1) + ' \xB7 ' + (u.phase || ''), u.label || '');
+        ref.stepEl = stepRow(u.step + 1, u.thinking || '');
         ref.steps.appendChild(ref.stepEl);
       } else if (ref.stepEl) {
-        ref.stepEl.querySelector('.phase').textContent = 'Step ' + (u.step + 1) + ' \xB7 ' + (u.phase || '');
-        ref.stepEl.querySelector('.txt').textContent = u.label || '';
+        ref.stepEl.querySelector('.phase').textContent = 'Step ' + (u.step + 1);
+        ref.stepEl.querySelector('.txt').textContent = u.thinking || u.label || '';
         ref.stepEl.classList.add('active');
       }
       if (u.phase === 'error') ref.stepEl?.classList.add('error');
@@ -220,6 +298,7 @@ export function handleAgentUpdate(tabId, u) {
         ref.pulse.classList.add(ok ? 'ok' : 'bad');
         ref.stepEl?.classList.add(ok ? 'done' : 'error');
         ref.stop.disabled = true; ref.stop.textContent = ok ? 'Done' : 'Ended';
+        ref.pause.disabled = true; ref.pause.style.display = 'none';
         ref.foot.textContent = u.summary || 'Finished.';
         ref.foot.classList.add('show', ok ? 'ok' : 'bad');
         ref.steps.scrollTop = ref.steps.scrollHeight;
@@ -263,7 +342,7 @@ export function showAskDialog(tabId, actions, step) {
     chrome.runtime.sendMessage({ type: 'AGENT_RESPOND', tabId, decision: 'confirm' }).catch(function () {});
     card.remove(); S.setAskCard(null);
   });
-  pool.appendChild(card);
+  foot.appendChild(card);
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   S.setAskCard(card);
 }

@@ -1,66 +1,63 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SSNND0</title>
-<link rel="icon" href="icon.png">
-<link rel="stylesheet" href="css/panel.css">
-</head>
-<body>
-<div id="root">
-
-<div id="header">
-  <div class="right">
-    <span id="badge" title="Open settings">model</span>
-  </div>
-</div>
-
-<div id="anonWarn" class="anon-warn">Warning: Anonymous agent can access all personal data</div>
-
-<div id="presetBar"></div>
-
-<div id="pool">
-  <div class="bubble hint">Type a message, or press <kbd>/</kbd> for commands.<br>Toggle <b style="color:var(--accent-hi)">Agent mode</b> below to drive the current tab.</div>
-</div>
-
-<div id="foot">
-  <div id="cmdOverlay">
-    <div class="ov-hdr">
-      <span class="ov-icon">/</span>
-      <span class="ov-hint">Tab autocomplete &middot; Enter run</span>
-      <span class="ov-cnt" id="ovCnt">0</span>
-    </div>
-    <div class="ov-body" id="ovBody"></div>
-    <div class="ov-detail" id="ovDetail"></div>
-  </div>
-  <div id="inputWrap">
-    <div id="inpShell">
-      <textarea id="inp" rows="1" placeholder="Message\u2026" enterkeyhint="send"></textarea>
-      <div id="inpActions">
-        <div class="left-actions">
-          <div class="action-pill" id="anonToggle">
-            <span class="action-dot"></span>
-            <span class="anon-text">Ask</span>
-          </div>
-          <div class="action-pill" id="agentPill" data-mode="chat">
-            <span class="action-dot"></span>
-            <span>Agent mode</span>
-          </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgentSSNND0</title>
+    <link rel="icon" href="icon.png" />
+    <link rel="stylesheet" href="css/panel.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="brand-kicker">AI agent</span>
+          <h1>AgentSSNND0</h1>
         </div>
-        <button id="go" disabled>
-          <svg viewBox="0 0 24 24">
-            <path d="M12 19V5M12 5L5 12M12 5L19 12"/>
-          </svg>
-        </button>
+        <button id="open-settings" class="ghost-button" type="button">Model</button>
+      </header>
+
+      <div class="mode-row" aria-label="Interaction modes">
+        <button class="mode-button active" data-mode="chat" type="button">Chat</button>
+        <button class="mode-button" data-mode="agent" type="button">Agent</button>
+        <button class="mode-button" data-mode="inspect" type="button">Inspect</button>
+        <button class="mode-button" data-mode="cursor-follow" type="button">Cursor follow</button>
       </div>
+
+      <main class="workspace">
+        <section class="panel-card task-card">
+          <div class="section-header">
+            <span class="status-dot"></span>
+            <span>Task</span>
+          </div>
+
+          <textarea id="task-input" rows="4" placeholder="Describe the next action to take on this page…">Review the current page and choose the right next action.</textarea>
+
+          <div class="cta-row">
+            <button id="read-page" class="secondary-button" type="button">Read page</button>
+            <button id="run-task" class="primary-button" type="button">Run agent</button>
+          </div>
+        </section>
+
+        <section class="panel-card insight-card">
+          <div class="section-header">
+            <span class="status-dot accent-dot"></span>
+            <span>Page insight</span>
+          </div>
+          <p id="page-summary" class="page-summary">Waiting for page context…</p>
+          <div id="insight-tags" class="tag-row"></div>
+        </section>
+
+        <section class="panel-card decisions-card">
+          <div class="section-header">
+            <span class="status-dot success-dot"></span>
+            <span>Recommended actions</span>
+          </div>
+          <ul id="decision-list" class="decision-list"></ul>
+        </section>
+      </main>
     </div>
-    <div class="disclaimer">AgentSSNND0 will make mistakes</div>
-  </div>
-</div>
 
-</div>
-
-<script type="module" src="js/panel.js"></script>
-</body>
+    <script type="module" src="./src/sidepanel.ts"></script>
+  </body>
 </html>

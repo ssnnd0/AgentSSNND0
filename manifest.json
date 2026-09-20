@@ -2,12 +2,12 @@
   "manifest_version": 3,
   "name": "AgentSSNND0",
   "short_name": "SSNND0",
-  "version": "0.1.0",
-  "description": "Universal AI assistant panel — works with multiple backends",
+  "version": "0.2.0",
+  "description": "AI page reader and JEV-driven browser agent for research, browsing, and test-page automation.",
   "minimum_chrome_version": "116",
   "icons": { "128": "icon.png" },
   "background": {
-    "service_worker": "lib/bootstrap.js",
+    "service_worker": "background.js",
     "type": "module"
   },
   "side_panel": { "default_path": "panel.html" },
@@ -17,13 +17,16 @@
     "open_in_tab": true
   },
   "permissions": [
-    "sidePanel", "storage", "activeTab", "scripting",
-    "tabs", "tabGroups", "alarms", "notifications", "offscreen",
-    "unlimitedStorage", "downloads", "debugger"
+    "sidePanel",
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "unlimitedStorage"
   ],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [{
-    "js": ["lib/inject.js"],
+    "js": ["content.js"],
     "matches": ["<all_urls>"],
     "run_at": "document_end"
   }],
@@ -31,6 +34,14 @@
     "toggle-panel": {
       "suggested_key": { "default": "Ctrl+E", "mac": "Command+E" },
       "description": "Toggle SSNND0 panel"
+    },
+    "toggle-cursor-follow": {
+      "suggested_key": { "default": "Alt+Shift+F", "mac": "Option+Shift+F" },
+      "description": "Toggle cursor follow mode"
+    },
+    "toggle-inspect-mode": {
+      "suggested_key": { "default": "Alt+Shift+I", "mac": "Option+Shift+I" },
+      "description": "Toggle page inspect mode"
     }
   },
   "content_security_policy": {

@@ -1,0 +1,20 @@
+{
+  "name": "agent-ssnnd0-typescript",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && mkdir -p dist && cp manifest.json dist/manifest.json && cp -R css audio locales panel.html settings.html dist/",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@types/chrome": "^0.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.8"
+  }
+}
